@@ -40,7 +40,7 @@ Access the API documentation at [http://127.0.0.1:8000/docs](http://127.0.0.1:80
 ## Docker Deployment
 1. Build the Docker image:
    ```bash
-   docker build -t ML-sounds-sandbox .
+   docker build -t ml-sounds-sandbox .
    ```
 
 2. Run the container:
@@ -57,3 +57,14 @@ Access the API documentation at [http://127.0.0.1:8000/docs](http://127.0.0.1:80
 - Run `terraform plan` to view plan of Terraform.
 - Run `terraform apply` to deploy the infrastructure.
 - Run `terraform destroy` to stroy the infrastructure in AWS.
+
+
+### 
+Update Docker Image
+
+```
+docker build -t ml-sounds-sandbox .
+aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 703671899612.dkr.ecr.us-east-2.amazonaws.com
+docker tag ml-sounds-sandbox:latest 703671899612.dkr.ecr.us-east-2.amazonaws.com/ml-sounds-sandbox:latest
+docker push 703671899612.dkr.ecr.us-east-2.amazonaws.com/ml-sounds-sandbox:latest
+```

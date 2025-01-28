@@ -170,7 +170,7 @@ resource "aws_ecs_task_definition" "app_task" {
   container_definitions = jsonencode([
     {
       name      = "app-container"
-      image     = "703671899612.dkr.ecr.us-east-2.amazonaws.com/ML-sounds-sandbox:latest"
+      image     = "703671899612.dkr.ecr.us-east-2.amazonaws.com/ml-sounds-sandbox:latest"
       cpu       = 256
       memory    = 512
       essential = true
