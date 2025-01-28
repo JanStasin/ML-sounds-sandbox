@@ -33,11 +33,11 @@ transform = transforms.Compose(
     transforms.Normalize((0.5, ), (0.5, ))])
 
 
-NUM_EPOCHS = 700
+NUM_EPOCHS = 1200
 LR = 0.001
 
 #choose_labels:
-for n in range(4,25,4):
+for n in range(8,50,4):
     chosen_labels = all_labels[:n]
     print(f'Number of labels: {n} --> {chosen_labels}')
     print(f'Epochs  {NUM_EPOCHS} learning rate {LR}')

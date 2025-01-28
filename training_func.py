@@ -63,7 +63,7 @@ def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_E
     print(f'Accuracy lr={rate_l}: {acc*100:.2f} %')
     # confusion matrix
     cm = confusion_matrix(y_val, np.argmax(y_val_hat, axis=1))
-    if save and acc*100> 60:
+    if save and acc*100>60:
         print('saving')
         m = torch.save(model.state_dict(), f'audio_classification_model10_LR{rate_l}_a{acc*100:.0f}%.pth')
         data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': m }
