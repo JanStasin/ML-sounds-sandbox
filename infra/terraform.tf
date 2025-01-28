@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "us-east-1"
+  region = "us-east-2"
 }
 
 # --- VPC Setup ---
@@ -12,24 +12,22 @@ resource "aws_vpc" "app_vpc" {
   }
 }
 
-resource "aws_subnet" "public_subnets" {
-  count                   = 2
+resource "aws_subnet" "public_subnet" {
   vpc_id                  = aws_vpc.app_vpc.id
-  cidr_block              = "10.0.${count.index}.0/24"
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  cidr_block              = "10.0.0.0/24"
+  availability_zone       = "us-east-2a" # Fixed AZ
   map_public_ip_on_launch = true
   tags = {
-    Name = "Public-Subnet-${count.index + 1}"
+    Name = "Public-Subnet"
   }
 }
 
-resource "aws_subnet" "private_subnets" {
-  count             = 2
+resource "aws_subnet" "private_subnet" {
   vpc_id            = aws_vpc.app_vpc.id
-  cidr_block        = "10.0.${count.index + 10}.0/24"
-  availability_zone = data.aws_availability_zones.available.names[count.index]
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "us-east-2a" # Fixed AZ
   tags = {
-    Name = "Private-Subnet-${count.index + 1}"
+    Name = "Private-Subnet"
   }
 }
 
@@ -54,8 +52,7 @@ resource "aws_route_table" "public_route_table" {
 }
 
 resource "aws_route_table_association" "public_subnet_association" {
-  count           = length(aws_subnet.public_subnets)
-  subnet_id       = aws_subnet.public_subnets[count.index].id
+  subnet_id       = aws_subnet.public_subnet.id
   route_table_id  = aws_route_table.public_route_table.id
 }
 
@@ -67,8 +64,7 @@ resource "aws_route_table" "private_route_table" {
 }
 
 resource "aws_route_table_association" "private_subnet_association" {
-  count           = length(aws_subnet.private_subnets)
-  subnet_id       = aws_subnet.private_subnets[count.index].id
+  subnet_id       = aws_subnet.private_subnet.id
   route_table_id  = aws_route_table.private_route_table.id
 }
 
@@ -95,12 +91,38 @@ resource "aws_security_group" "ecs_security_group" {
   }
 }
 
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "ecsTaskExecutionRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "ECS Task Execution Role"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
 # --- VPC Endpoints for ECR ---
 resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_id            = aws_vpc.app_vpc.id
-  service_name      = "com.amazonaws.${var.aws_region}.ecr.dkr"
+  service_name      = "com.amazonaws.us-east-2.ecr.dkr"
   private_dns_enabled = true
-  subnet_ids        = [aws_subnet.private_subnets[0].id] # Single AZ
+  subnet_ids        = [aws_subnet.private_subnet.id] # Single AZ
   security_group_ids = [aws_security_group.ecs_security_group.id]
 
   tags = {
@@ -110,9 +132,9 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
 
 resource "aws_vpc_endpoint" "ecr_api" {
   vpc_id            = aws_vpc.app_vpc.id
-  service_name      = "com.amazonaws.${var.aws_region}.ecr.api"
+  service_name      = "com.amazonaws.us-east-2.ecr.api"
   private_dns_enabled = true
-  subnet_ids        = [aws_subnet.private_subnets[0].id] # Single AZ
+  subnet_ids        = [aws_subnet.private_subnet.id] # Single AZ
   security_group_ids = [aws_security_group.ecs_security_group.id]
 
   tags = {
@@ -122,9 +144,9 @@ resource "aws_vpc_endpoint" "ecr_api" {
 
 resource "aws_vpc_endpoint" "logs" {
   vpc_id            = aws_vpc.app_vpc.id
-  service_name      = "com.amazonaws.${var.aws_region}.logs"
+  service_name      = "com.amazonaws.us-east-2.logs"
   private_dns_enabled = true
-  subnet_ids        = [aws_subnet.private_subnets[0].id] # Single AZ
+  subnet_ids        = [aws_subnet.private_subnet.id] # Single AZ
   security_group_ids = [aws_security_group.ecs_security_group.id]
 
   tags = {
@@ -170,7 +192,7 @@ resource "aws_ecs_service" "app_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = aws_subnet.private_subnets[*].id
+    subnets         = [aws_subnet.private_subnet.id]
     security_groups = [aws_security_group.ecs_security_group.id]
   }
 }
