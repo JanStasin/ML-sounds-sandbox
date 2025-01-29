@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy files to the container
-COPY apy.py ./ 
+COPY api.py ./ 
 COPY model ./model
 COPY requirements.txt ./ 
     
