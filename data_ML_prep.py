@@ -3,6 +3,7 @@ import librosa
 import librosa.display
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 #dict_ts = {'A': {},'B': {}}
 dict_mats = {'A': {},'B': {}}
@@ -36,8 +37,6 @@ with open('/Users/jansta/learn/acoustics/ESC-50-master/meta/esc50.csv') as f:
                 dict_mats['B'][line[3]] = [mel_spect]
             else:
                 dict_mats['B'][line[3]].append(mel_spect)
-
-
 
 #np.save('/Users/jansta/learn/acoustics/dict_ts.npy', dict_ts, allow_pickle=True)
 np.save('/Users/jansta/learn/acoustics/dict_mats.npy', dict_mats, allow_pickle=True)
