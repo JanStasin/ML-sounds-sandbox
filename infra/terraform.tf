@@ -124,6 +124,7 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   private_dns_enabled = true
   subnet_ids        = [aws_subnet.private_subnet.id] # Single AZ
   security_group_ids = [aws_security_group.ecs_security_group.id]
+  vpc_endpoint_type = "Interface"
 
   tags = {
     Name = "ECR-DKR-Endpoint"
@@ -136,6 +137,7 @@ resource "aws_vpc_endpoint" "ecr_api" {
   private_dns_enabled = true
   subnet_ids        = [aws_subnet.private_subnet.id] # Single AZ
   security_group_ids = [aws_security_group.ecs_security_group.id]
+  vpc_endpoint_type = "Interface"
 
   tags = {
     Name = "ECR-API-Endpoint"
@@ -148,6 +150,7 @@ resource "aws_vpc_endpoint" "logs" {
   private_dns_enabled = true
   subnet_ids        = [aws_subnet.private_subnet.id] # Single AZ
   security_group_ids = [aws_security_group.ecs_security_group.id]
+  vpc_endpoint_type = "Interface"
 
   tags = {
     Name = "CloudWatch-Logs-Endpoint"
