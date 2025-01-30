@@ -46,7 +46,7 @@ def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_E
         if epoch % (int(NUM_EPOCHS/10)) == 0:
             print(f'Epoch {epoch}/{NUM_EPOCHS}, Loss: {np.mean(losses_epoch):.16f}')
 
-    sns.lineplot(x=list(range(len(losses_epoch_mean))), y=losses_epoch_mean)
+    #sns.lineplot(x=list(range(len(losses_epoch_mean))), y=losses_epoch_mean)
     y_val = []
     y_val_hat = []
     for i, data in enumerate(val_loader):
@@ -65,8 +65,8 @@ def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_E
     cm = confusion_matrix(y_val, np.argmax(y_val_hat, axis=1))
     if save and acc*100>60:
         print('saving')
-        m = torch.save(model.state_dict(), f'audio_classification_model10_LR{rate_l}_a{acc*100:.0f}%.pth')
-        data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': m }
-        np.save(f'outputs/results_and_model_acc_{acc*100:.1f}_LR_{rate_l}_nclasses_{n_classes}',data) 
+        #m = torch.save(model.state_dict(), f'audio_classification_model_LR{rate_l}_a{acc*100:.0f}%.pth')
+        data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': model.state_dict(),'n_classes': n_classes}
+        np.save(f'outputs/results_and_model_acc_{acc*100:.1f}_nclasses_{n_classes}',data)
 
     return losses_epoch_mean, acc, cm
