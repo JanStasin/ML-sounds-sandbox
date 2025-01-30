@@ -2,87 +2,93 @@ provider "aws" {
   region = "us-east-2"
 }
 
-# --- VPC Setup ---
+# --------------------------------------------
+# 1️⃣ Create a VPC with Public & Private Subnets
+# --------------------------------------------
 resource "aws_vpc" "app_vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
   enable_dns_hostnames = true
+
   tags = {
     Name = "App-VPC"
   }
 }
 
-resource "aws_subnet" "public_subnet" {
+resource "aws_subnet" "public_subnet_1" {
   vpc_id                  = aws_vpc.app_vpc.id
-  cidr_block              = "10.0.0.0/24"
-  availability_zone       = "us-east-2a" # Fixed AZ
+  cidr_block              = "10.0.3.0/24"
+  availability_zone       = "us-east-2a"
   map_public_ip_on_launch = true
+
   tags = {
-    Name = "Public-Subnet"
+    Name = "Public-Subnet-1"
   }
 }
 
-resource "aws_subnet" "private_subnet" {
-  vpc_id            = aws_vpc.app_vpc.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-east-2a" # Fixed AZ
+resource "aws_subnet" "public_subnet_2" {
+  vpc_id                  = aws_vpc.app_vpc.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "us-east-2b"
+  map_public_ip_on_launch = true
+
   tags = {
-    Name = "Private-Subnet"
+    Name = "Public-Subnet-2"
   }
 }
 
 resource "aws_internet_gateway" "app_igw" {
   vpc_id = aws_vpc.app_vpc.id
+
   tags = {
     Name = "App-IGW"
   }
 }
 
-resource "aws_route_table" "public_route_table" {
-  vpc_id = aws_vpc.app_vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.app_igw.id
-  }
-
-  tags = {
-    Name = "Public-Route-Table"
-  }
+# --------------------------------------------
+# 2️⃣ Create a NAT Gateway for Private Subnets
+# --------------------------------------------
+resource "aws_eip" "nat_eip" {
+  domain = "vpc"
 }
 
-resource "aws_route_table_association" "public_subnet_association" {
-  subnet_id       = aws_subnet.public_subnet.id
-  route_table_id  = aws_route_table.public_route_table.id
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = aws_subnet.public_subnet_1.id
+
+  tags = {
+    Name = "App-NAT-Gateway"
+  }
 }
 
 resource "aws_route_table" "private_route_table" {
   vpc_id = aws_vpc.app_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat.id
+  }
+
   tags = {
     Name = "Private-Route-Table"
   }
 }
 
 resource "aws_route_table_association" "private_subnet_association" {
-  subnet_id       = aws_subnet.private_subnet.id
-  route_table_id  = aws_route_table.private_route_table.id
+  subnet_id      = aws_subnet.public_subnet_2.id
+  route_table_id = aws_route_table.private_route_table.id
 }
 
-# --- Security Groups ---
-resource "aws_security_group" "ecs_security_group" {
+# --------------------------------------------
+# 3️⃣ Create Security Groups
+# --------------------------------------------
+resource "aws_security_group" "ecs_sg" {
   vpc_id = aws_vpc.app_vpc.id
 
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -91,17 +97,53 @@ resource "aws_security_group" "ecs_security_group" {
   }
 }
 
+# --------------------------------------------
+# 4️⃣ Create an Application Load Balancer (ALB)
+# --------------------------------------------
+resource "aws_lb" "app_lb" {
+  name               = "app-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.ecs_sg.id]
+  subnets           = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
+
+  tags = {
+    Name = "App-ALB"
+  }
+}
+
+resource "aws_lb_listener" "http_listener" {
+  load_balancer_arn = aws_lb.app_lb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.app_tg.arn
+  }
+}
+
+# --------------------------------------------
+# 5️⃣ Create an ECS Cluster
+# --------------------------------------------
+resource "aws_ecs_cluster" "app_cluster" {
+  name = "App-Cluster"
+}
+
+# --------------------------------------------
+# 6️⃣ Create IAM Role for ECS Task Execution
+# --------------------------------------------
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "ecsTaskExecutionRole"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow"
+        Effect = "Allow",
         Principal = {
           Service = "ecs-tasks.amazonaws.com"
-        }
+        },
         Action = "sts:AssumeRole"
       }
     ]
@@ -117,51 +159,9 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# --- VPC Endpoints for ECR ---
-resource "aws_vpc_endpoint" "ecr_dkr" {
-  vpc_id            = aws_vpc.app_vpc.id
-  service_name      = "com.amazonaws.us-east-2.ecr.dkr"
-  private_dns_enabled = true
-  subnet_ids        = [aws_subnet.private_subnet.id] # Single AZ
-  security_group_ids = [aws_security_group.ecs_security_group.id]
-  vpc_endpoint_type = "Interface"
-
-  tags = {
-    Name = "ECR-DKR-Endpoint"
-  }
-}
-
-resource "aws_vpc_endpoint" "ecr_api" {
-  vpc_id            = aws_vpc.app_vpc.id
-  service_name      = "com.amazonaws.us-east-2.ecr.api"
-  private_dns_enabled = true
-  subnet_ids        = [aws_subnet.private_subnet.id] # Single AZ
-  security_group_ids = [aws_security_group.ecs_security_group.id]
-  vpc_endpoint_type = "Interface"
-
-  tags = {
-    Name = "ECR-API-Endpoint"
-  }
-}
-
-resource "aws_vpc_endpoint" "logs" {
-  vpc_id            = aws_vpc.app_vpc.id
-  service_name      = "com.amazonaws.us-east-2.logs"
-  private_dns_enabled = true
-  subnet_ids        = [aws_subnet.private_subnet.id] # Single AZ
-  security_group_ids = [aws_security_group.ecs_security_group.id]
-  vpc_endpoint_type = "Interface"
-
-  tags = {
-    Name = "CloudWatch-Logs-Endpoint"
-  }
-}
-
-# --- ECS Cluster ---
-resource "aws_ecs_cluster" "app_cluster" {
-  name = "App-Cluster"
-}
-
+# --------------------------------------------
+# 7️⃣ Create ECS Task Definition
+# --------------------------------------------
 resource "aws_ecs_task_definition" "app_task" {
   family                   = "app-task"
   network_mode             = "awsvpc"
@@ -187,6 +187,28 @@ resource "aws_ecs_task_definition" "app_task" {
   ])
 }
 
+# --------------------------------------------
+# 8️⃣ Create Load Balancer Target Group
+# --------------------------------------------
+resource "aws_lb_target_group" "app_tg" {
+  name        = "app-target-group"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.app_vpc.id
+  target_type = "ip"
+
+  health_check {
+    path                = "/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
+# --------------------------------------------
+# 9️⃣ Create ECS Service
+# --------------------------------------------
 resource "aws_ecs_service" "app_service" {
   name            = "app-service"
   cluster         = aws_ecs_cluster.app_cluster.id
@@ -195,7 +217,14 @@ resource "aws_ecs_service" "app_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = [aws_subnet.private_subnet.id]
-    security_groups = [aws_security_group.ecs_security_group.id]
+    subnets         = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.app_tg.arn
+    container_name   = "app-container"
+    container_port   = 80
   }
 }
