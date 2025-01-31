@@ -1,20 +1,17 @@
 import torch
 import torchaudio
-import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
 from sklearn.metrics import accuracy_score, confusion_matrix
-import random
-
-import seaborn as sns
-
+#import random
 import numpy as np
 
+from timing_decor import timing_decorator
+
+@timing_decorator
 def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_EPOCHS=800, save=True):
-    # %% TRAINING
-    #model = AudioClassifNet()
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=rate_l)
     losses_epoch_mean = []

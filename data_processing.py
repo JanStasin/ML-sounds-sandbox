@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pydub
 
+from timing_decor import timing_decorator
 from audio_ds_model import get_mel_spect
 
 raw_data_loc = '/Users/jansta/learn/acoustics/ESC-50-master/audio/'
@@ -24,42 +25,71 @@ SR = 44100
 FRAME = 512
 n_mels = 64
 
+@timing_decorator
+def process_audio(audio_files, SR = 44100, FRAME = 512, n_mels = 64):
+    for idx, file_name in enumerate(audio_files):
+        file_path = os.path.join(raw_data_loc, file_name)
 
-for idx, file_name in enumerate(audio_files):
-    file_path = os.path.join(raw_data_loc, file_name)
+        name = file_name.split('.')[0]
 
-    name = file_name.split('.')[0]
+        try:
+            mel_spect = get_mel_spect(file_path, in_dB=True, SR=SR, FRAME=FRAME, n_mels=n_mels)
+
+            # Optionally, save the magnitude spectrogram as a matrix
+            spectrogram_matrix_path = f'spects/spect_dB_mat_{name}.npy'
+            #np.save(spectrogram_matrix_path, mel_spect)
+
+            # Plot the spectrogram
+            plt.figure(figsize=(10, 4))
+            librosa.display.specshow(mel_spect, sr=SR, x_axis='frames', y_axis='linear')
+            plt.colorbar(format='%+2.0f dB')
+            plt.title(f'Spectrogram of {file_name}')
+            plt.tight_layout()
+            # Save the spectrogram image
+            spectrogram_path = f'spects/dB_spectrogram_{name}.png'
+            plt.savefig(spectrogram_path)
+            plt.close()
+
+            print(f'Processed {file_name}:')
+            #print(f'- Time series saved to {timeseries_path}')
+            print(f'- Spectrogram saved to {spectrogram_matrix_path}\n')
+
+        except Exception as e:
+            print(f'Error processing {file_name}: {e}\n')
+    print('processing done')
+
+if __name__ == '__main__':
+    process_audio(audio_files, SR, FRAME, n_mels)
     
-    try:
-        # # Actual recordings are sometimes not frame accurate, so we trim/overlay to exactly 5 seconds
-        # data = pydub.AudioSegment.silent(duration=5000)
-        # data = data.overlay(pydub.AudioSegment.from_file(file_path)[0:5000])
-        # y = (np.frombuffer(data._data, dtype="int16") + 0.5) / (0x7FFF + 0.5)  
-        # print(y.shape)
+    # for idx, file_name in enumerate(audio_files):
 
-        # y_dB = librosa.amplitude_to_db(np.abs(y), ref=np.max)
+    #     file_path = os.path.join(raw_data_loc, file_name)
 
-        mel_spect = get_mel_spect(file_path, in_dB=True, SR=SR, FRAME=FRAME, n_mels=n_mels)
+    #     name = file_name.split('.')[0]
+    
+    # try:
+    #     mel_spect = get_mel_spect(file_path, in_dB=True, SR=SR, FRAME=FRAME, n_mels=n_mels)
 
-        # Optionally, save the magnitude spectrogram as a matrix
-        spectrogram_matrix_path = f'spects/spect_dB_mat_{name}.npy'
-        np.save(spectrogram_matrix_path, mel_spect)
+    #     # Optionally, save the magnitude spectrogram as a matrix
+    #     spectrogram_matrix_path = f'spects/spect_dB_mat_{name}.npy'
+    #     #np.save(spectrogram_matrix_path, mel_spect)
         
-        # Plot the spectrogram
-        plt.figure(figsize=(10, 4))
-        librosa.display.specshow(mel_spect, sr=SR, x_axis='time', y_axis='log')
-        plt.colorbar(format='%+2.0f dB')
-        plt.title(f'Spectrogram of {file_name}')
-        plt.tight_layout()
-        # Save the spectrogram image
-        spectrogram_path = f'spects/dB_spectrogram_{name}.png'
-        plt.savefig(spectrogram_path)
-        plt.close()
+    #     # Plot the spectrogram
+    #     plt.figure(figsize=(10, 4))
+    #     librosa.display.specshow(mel_spect, sr=SR, x_axis='frames', y_axis='linear')
+    #     plt.colorbar(format='%+2.0f dB')
+    #     plt.title(f'Spectrogram of {file_name}')
+    #     plt.tight_layout()
+    #     # Save the spectrogram image
+    #     spectrogram_path = f'spects/dB_spectrogram_{name}.png'
+    #     plt.savefig(spectrogram_path)
+    #     plt.close()
 
-        print(f'Processed {file_name}:')
-        #print(f'- Time series saved to {timeseries_path}')
-        print(f'- Spectrogram saved to {spectrogram_matrix_path}\n')
+    #     print(f'Processed {file_name}:')
+    #     #print(f'- Time series saved to {timeseries_path}')
+    #     print(f'- Spectrogram saved to {spectrogram_matrix_path}\n')
         
-    except Exception as e:
-        print(f'Error processing {file_name}: {e}\n')
+    # except Exception as e:
+    #     print(f'Error processing {file_name}: {e}\n')
+    
 

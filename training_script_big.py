@@ -1,21 +1,14 @@
-import os
 import librosa
 import librosa.display
 import numpy as np
 # plotting
-import matplotlib.pyplot as plt
-import seaborn as sns
-from PIL import Image
 
 import torch
-import torchaudio
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-
 from sklearn.metrics import accuracy_score, confusion_matrix
-import random
 
 ## import custom made datset class:
 from audio_ds_model import AudioDataset, AudioClassifNetBig
@@ -33,12 +26,12 @@ transform = transforms.Compose(
     transforms.Normalize((0.5, ), (0.5, ))])
 
 
-NUM_EPOCHS = 200
+NUM_EPOCHS = 1000
 LR = 0.001
 
 # #choose_labels:
 # for n in range(10,50,5):
-chosen_labels = all_labels[:30]
+chosen_labels = all_labels
 print(f'Number of labels: {len(chosen_labels)} --> {chosen_labels}')
 print(f'Epochs  {NUM_EPOCHS} learning rate {LR}')
 encoded_labels = {}
@@ -48,7 +41,6 @@ for i, label in enumerate(chosen_labels):
 # Create dataset with transform
 dataset = AudioDataset(dict_mats['A'], chosen_labels, encoded_labels, transform=transform)
 datasetB = AudioDataset(dict_mats['B'], chosen_labels, encoded_labels, transform=transform)
-
 
 # Create dataloaders
 batch_size = 4
@@ -66,4 +58,4 @@ print(f'Running training with {n_classes} classes')
 out = run_training(model, train_loader, val_loader, n_classes, rate_l=LR, NUM_EPOCHS=NUM_EPOCHS, save=True)
 
 ## Plot the confusion matrix:
-sns.heatmap(out[2], annot=True, xticklabels=chosen_labels, yticklabels=chosen_labels)
+#sns.heatmap(out[2], annot=True, xticklabels=chosen_labels, yticklabels=chosen_labels)
