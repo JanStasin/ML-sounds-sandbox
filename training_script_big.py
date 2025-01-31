@@ -2,7 +2,6 @@ import librosa
 import librosa.display
 import numpy as np
 # plotting
-
 import torch
 import torchvision.transforms as transforms
 import torch.nn as nn
@@ -14,6 +13,12 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 from audio_ds_model import AudioDataset, AudioClassifNetBig
 ## and the external trainig function:
 from training_func import run_training
+
+
+# create dir for aws:
+dir_ = '/opt/ml/model/'
+import os
+os.makedirs(dir_, exist_ok=True)
 
 # load preprocessed spectrograms data:
 dict_mats = np.load('/Users/jansta/learn/acoustics/dict_mats_dB.npy', allow_pickle=True).item()
@@ -55,7 +60,7 @@ model = AudioClassifNetBig(n_classes)
 
 ## Run training:
 print(f'Running training with {n_classes} classes')
-out = run_training(model, train_loader, val_loader, n_classes, rate_l=LR, NUM_EPOCHS=NUM_EPOCHS, save=True)
+out = run_training(model, train_loader, val_loader, n_classes, rate_l=LR, NUM_EPOCHS=NUM_EPOCHS, save=True, thresh=0)
 
 ## Plot the confusion matrix:
 #sns.heatmap(out[2], annot=True, xticklabels=chosen_labels, yticklabels=chosen_labels)

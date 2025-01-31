@@ -1,5 +1,4 @@
 import torch
-import torchaudio
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
@@ -11,7 +10,7 @@ import numpy as np
 from timing_decor import timing_decorator
 
 @timing_decorator
-def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_EPOCHS=800, save=True):
+def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_EPOCHS=800, save=True, thresh=60):
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=rate_l)
     losses_epoch_mean = []
@@ -60,9 +59,10 @@ def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_E
     print(f'Accuracy lr={rate_l}: {acc*100:.2f} %')
     # confusion matrix
     cm = confusion_matrix(y_val, np.argmax(y_val_hat, axis=1))
-    if save and acc*100>60:
+    if save and acc*100>thresh:
         print('saving')
         #m = torch.save(model.state_dict(), f'audio_classification_model_LR{rate_l}_a{acc*100:.0f}%.pth')
+        torch.save(model.state_dict(), f'/opt/ml/model/ac_model_a{acc*100:.1f}_nclasses_{n_classes}%.pth')
         data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': model.state_dict(),'n_classes': n_classes}
         np.save(f'outputs/results_and_model_acc_{acc*100:.1f}_nclasses_{n_classes}',data)
 
