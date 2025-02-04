@@ -14,6 +14,7 @@ app = FastAPI()
 # Load the saved model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 m = np.load('working_models/results_and_model_acc_78.3_LR_0.001_nclasses_8.npy', allow_pickle=True).item()['model']
+print(type(m), m)
 model = AudioClassifNet(n_classes=8)
 #model = AudioClassifNetBig()
 model.load_state_dict(torch.load(m, map_location=device))
