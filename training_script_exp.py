@@ -23,7 +23,7 @@ from audio_ds_model import AudioDataset, AudioClassifNet
 from training_func import run_training
 
 # load preprocessed spectrograms data:
-dict_mats = np.load('/Users/jansta/learn/acoustics/dict_mats.npy', allow_pickle=True).item()
+dict_mats = np.load('/Users/jansta/learn/acoustics/dict_mats_dB.npy', allow_pickle=True).item()
 all_labels = list(dict_mats['A'].keys())
 
 transform = transforms.Compose(
@@ -34,10 +34,10 @@ transform = transforms.Compose(
 
 
 NUM_EPOCHS = 1200
-LR = 0.001
+LR = 0.00085
 
 #choose_labels:
-for n in range(8,50,4):
+for n in range(10,50,5):
     chosen_labels = all_labels[:n]
     print(f'Number of labels: {n} --> {chosen_labels}')
     print(f'Epochs  {NUM_EPOCHS} learning rate {LR}')
@@ -48,6 +48,7 @@ for n in range(8,50,4):
     # Create dataset with transform
     dataset = AudioDataset(dict_mats['A'], chosen_labels, encoded_labels, transform=transform)
     datasetB = AudioDataset(dict_mats['B'], chosen_labels, encoded_labels, transform=transform)
+
 
     # Create dataloaders
     batch_size = 4

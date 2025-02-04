@@ -1,20 +1,16 @@
 import torch
-import torchaudio
-import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
 from sklearn.metrics import accuracy_score, confusion_matrix
-import random
-
-import seaborn as sns
-
+#import random
 import numpy as np
 
-def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_EPOCHS=800, save=True):
-    # %% TRAINING
-    #model = AudioClassifNet()
+from timing_decor import timing_decorator
+
+@timing_decorator
+def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_EPOCHS=800, save=True, thresh=60):
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=rate_l)
     losses_epoch_mean = []
@@ -46,7 +42,7 @@ def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_E
         if epoch % (int(NUM_EPOCHS/10)) == 0:
             print(f'Epoch {epoch}/{NUM_EPOCHS}, Loss: {np.mean(losses_epoch):.16f}')
 
-    sns.lineplot(x=list(range(len(losses_epoch_mean))), y=losses_epoch_mean)
+    #sns.lineplot(x=list(range(len(losses_epoch_mean))), y=losses_epoch_mean)
     y_val = []
     y_val_hat = []
     for i, data in enumerate(val_loader):
@@ -63,10 +59,11 @@ def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_E
     print(f'Accuracy lr={rate_l}: {acc*100:.2f} %')
     # confusion matrix
     cm = confusion_matrix(y_val, np.argmax(y_val_hat, axis=1))
-    if save and acc*100>60:
+    if save and acc*100>thresh:
         print('saving')
-        m = torch.save(model.state_dict(), f'audio_classification_model10_LR{rate_l}_a{acc*100:.0f}%.pth')
-        data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': m }
-        np.save(f'outputs/results_and_model_acc_{acc*100:.1f}_LR_{rate_l}_nclasses_{n_classes}',data) 
+        #m = torch.save(model.state_dict(), f'audio_classification_model_LR{rate_l}_a{acc*100:.0f}%.pth')
+        torch.save(model.state_dict(), f'/opt/ml/model/ac_model_a{acc*100:.1f}_nclasses_{n_classes}%.pth')
+        data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': model.state_dict(),'n_classes': n_classes}
+        np.save(f'outputs/results_and_model_acc_{acc*100:.1f}_nclasses_{n_classes}',data)
 
     return losses_epoch_mean, acc, cm

@@ -1,0 +1,29 @@
+# Use a Python base image
+FROM python:3.11-slim AS builder
+
+# Install system dependencies for building Python packages
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     # python3-dev \
+#     # libjpeg-dev \
+#     # zlib1g-dev \
+#     # libfreetype6-dev \
+#     # build-essential \
+#     # libopenblas-dev && \
+#     rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Copy files to the container
+COPY requirements_train.txt ./
+COPY dict_mats_dB.npy ./
+COPY audio_ds_model.py ./
+COPY timing_decor.py ./
+COPY training_func.py ./
+COPY training_script_big.py ./
+COPY encoded_labels.npy ./
+    
+RUN pip install -r requirements_train.txt
+
+# Command to run the app
+CMD ["sh", "-c", "python training_script_big.py"]
