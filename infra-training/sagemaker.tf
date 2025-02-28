@@ -1,15 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-    null = {
-      source  = "hashicorp/null"
-      version = "~> 3.0"
-    }
-  }
-}
 
 provider "aws" {
   region = "us-east-2"
@@ -17,38 +5,78 @@ provider "aws" {
 
 provider "null" {}
 
-# Create an S3 Bucket for SageMaker Training & Model Outputs
 resource "aws_s3_bucket" "sagemaker_bucket" {
   bucket = "ml-sounds-sandbox-bucket"
-  force_destroy = true
 }
 
-# IAM Role for SageMaker Execution
-resource "aws_iam_role" "sagemaker_execution_role" {
-  name = "SageMakerExecutionRole"
+
+resource "aws_iam_role" "sagemaker_role" {
+  name = "sagemaker-training-role"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Action = "sts:AssumeRole",
-      Effect = "Allow",
-      Principal = {
-        Service = "sagemaker.amazonaws.com"
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "sagemaker.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
       }
-    }]
+    ]
   })
 }
 
-# Attach SageMaker Full Access Policy
-resource "aws_iam_policy_attachment" "sagemaker_policy" {
-  name       = "sagemaker-policy-attachment"
-  roles      = [aws_iam_role.sagemaker_execution_role.name]
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
+resource "aws_iam_policy" "sagemaker_policy" {
+  name        = "sagemaker-training-policy"
+  description = "Policy for SageMaker to access S3 and CloudWatch"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::ml-sounds-sandbox-bucket",
+          "arn:aws:s3:::ml-sounds-sandbox-bucket/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sagemaker:CreateTrainingJob",
+          "sagemaker:DescribeTrainingJob",
+          "sagemaker:StopTrainingJob"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
-# Custom IAM Policy for SageMaker to Write to S3
-resource "aws_iam_policy" "sagemaker_s3_access" {
-  name = "SageMakerS3WriteAccess"
+resource "aws_iam_role_policy_attachment" "attach_policy" {
+  role       = aws_iam_role.sagemaker_role.name
+  policy_arn = aws_iam_policy.sagemaker_policy.arn
+}
+
+
+resource "aws_iam_policy" "sagemaker_s3_policy" {
+  name        = "sagemaker-s3-access"
+  description = "Allows SageMaker to access S3 bucket for training data"
 
   policy = jsonencode({
     Version = "2012-10-17",
@@ -56,38 +84,55 @@ resource "aws_iam_policy" "sagemaker_s3_access" {
       {
         Effect = "Allow",
         Action = [
-          "s3:PutObject",
+          "s3:ListBucket",
           "s3:GetObject",
-          "s3:ListBucket"
+          "s3:PutObject"
         ],
         Resource = [
-          "arn:aws:s3:::${aws_s3_bucket.sagemaker_bucket.id}",
-          "arn:aws:s3:::${aws_s3_bucket.sagemaker_bucket.id}/*"
+          "arn:aws:s3:::ml-sounds-sandbox-bucket",
+          "arn:aws:s3:::ml-sounds-sandbox-bucket/*"
         ]
       }
     ]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "sagemaker_s3_access_attach" {
-  policy_arn = aws_iam_policy.sagemaker_s3_access.arn
-  role       = aws_iam_role.sagemaker_execution_role.name
+resource "aws_iam_role_policy_attachment" "attach_sagemaker_s3" {
+  role       = aws_iam_role.sagemaker_role.name
+  policy_arn = aws_iam_policy.sagemaker_s3_policy.arn
 }
 
-# ✅ Create a SageMaker Training Job using AWS CLI via Terraform
+
 resource "null_resource" "sagemaker_training_job" {
   provisioner "local-exec" {
     command = <<EOT
       aws sagemaker create-training-job \
-        --training-job-name "my-training-job" \
-        --role-arn "arn:aws:iam::703671899612:role/SageMakerExecutionRole" \
-        --algorithm-specification "TrainingImage=703671899612.dkr.ecr.us-east-2.amazonaws.com/my-training-image,TrainingInputMode=File" \
-        --resource-config "InstanceType=ml.m5.large,InstanceCount=1,VolumeSizeInGB=10" \
-        --stopping-condition "MaxRuntimeInSeconds=3600" \
-        --hyper-parameters batch-size=64,epochs=5,lr=0.001 \
-        --output-data-config "S3OutputPath=s3://ml-sounds-sandbox-bucket/output/" \
-        --region us-east-2
+        --region us-east-2 \
+        --training-job-name "ml-sounds-sandbox" \
+        --role-arn "arn:aws:iam::703671899612:role/sagemaker-training-role" \
+        --algorithm-specification '{"TrainingImage":"703671899612.dkr.ecr.us-east-2.amazonaws.com/xxxxxxxxxx:latest","TrainingInputMode":"File"}' \
+        --resource-config '{"InstanceType":"ml.m5.large","InstanceCount":1,"VolumeSizeInGB":10}' \
+        --input-data-config '[{"ChannelName":"train","DataSource":{"S3DataSource":{"S3Uri":"s3://ml-sounds-sandbox-bucket/train/","S3DataType":"S3Prefix","S3DataDistributionType":"FullyReplicated"}}}]' \
+        --output-data-config '{"S3OutputPath":"s3://ml-sounds-sandbox-bucket/output/"}' \
+        --stopping-condition '{"MaxRuntimeInSeconds":3600}' \
+        --hyperparameters "n-estimators=200,max-depth=10"
     EOT
   }
 }
 
+
+
+resource "null_resource" "trigger_sagemaker_job" {
+  provisioner "local-exec" {
+    command = <<EOT
+      aws sagemaker create-training-job \
+        --training-job-name "sagemaker-training-cli-job" \
+        --algorithm-specification TrainingImage=703671899612.dkr.ecr.us-east-2.amazonaws.com/image-classification:latest,TrainingInputMode=File \
+        --role-arn ${aws_iam_role.sagemaker_role.arn} \
+        --resource-config InstanceType=ml.m5.large,InstanceCount=1,VolumeSizeInGB=10 \
+        --input-data-config "[{\"ChannelName\":\"training\",\"DataSource\":{\"S3DataSource\":{\"S3Uri\":\"s3://ml-sounds-sandbox-bucket/train/\",\"S3DataType\":\"S3Prefix\",\"S3DataDistributionType\":\"FullyReplicated\"}}}]" \
+        --output-data-config S3OutputPath=s3://ml-sounds-sandbox-bucket/output/ \
+        --stopping-condition MaxRuntimeInSeconds=3600
+    EOT
+  }
+}

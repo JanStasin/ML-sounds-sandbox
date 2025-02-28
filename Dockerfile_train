@@ -1,15 +1,5 @@
 # Use a Python base image
-FROM python:3.11-slim AS builder
-
-# Install system dependencies for building Python packages
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     # python3-dev \
-#     # libjpeg-dev \
-#     # zlib1g-dev \
-#     # libfreetype6-dev \
-#     # build-essential \
-#     # libopenblas-dev && \
-#     rm -rf /var/lib/apt/lists/*
+FROM 763104351884.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:1.2-1-cpu-py3
 
 # Set the working directory
 WORKDIR /app
