@@ -12,20 +12,15 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import accuracy_score, confusion_matrix
 
 ## import custom made datset class:
-from audio_ds_model import AudioDataset, AudioClassifNetBig
+from audio_ds_model import AudioDataset, AudioClassifNetXAI
 ## and the external trainig function:
-from training_func import run_training
+from training_func_gcam import run_training, gradCAMS_saver
 
-# if not sys.argv[1]:
-#     n_epochs = 10
-# else:
-#     n_epochs = sys.argv[1]
+n_epochs = 5000
+# # create dir for aws:
+# dir_ = '/opt/ml/model/'
 
-n_epochs = 10
-# create dir for aws:
-dir_ = '/opt/ml/model/'
-
-os.makedirs(dir_, exist_ok=True)
+# os.makedirs(dir_, exist_ok=True)
 
 # load preprocessed spectrograms data:
 dict_mats = np.load('dict_mats_dB.npy', allow_pickle=True).item()
@@ -38,7 +33,7 @@ transform = transforms.Compose(
     transforms.Normalize((0.5, ), (0.5, ))])
 
 NUM_EPOCHS = n_epochs
-LR = 0.001
+LR = 0.000075
 
 # #choose_labels:
 # for n in range(10,50,5):
@@ -62,11 +57,11 @@ val_loader = DataLoader(datasetB, batch_size=batch_size, shuffle=True)
 
 ## Create an  instance of the model:
 n_classes = len(chosen_labels)
-model = AudioClassifNetBig(n_classes)
+model = AudioClassifNetXAI(n_classes)
 
 ## Run training:
 print(f'Running training with {n_classes} classes')
-out = run_training(model, train_loader, val_loader, n_classes, rate_l=LR, NUM_EPOCHS=NUM_EPOCHS, save=True, thresh=0)
+out = run_training(model, train_loader, val_loader, encoded_labels, rate_l=LR, NUM_EPOCHS=NUM_EPOCHS, save=True, thresh=0)
 
 ## Plot the confusion matrix:
 #sns.heatmap(out[2], annot=True, xticklabels=chosen_labels, yticklabels=chosen_labels)

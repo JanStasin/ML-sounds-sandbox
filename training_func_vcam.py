@@ -9,8 +9,36 @@ import numpy as np
 
 from timing_decor import timing_decorator
 
+def vanillaCAMS(val_loader, model, encoded_labels):
+    cams = {}
+    samples = {}
+    n_classes = len(encoded_labels)
+    for i, data in enumerate(val_loader):
+        inputs, y_val_temp = data
+        #print(inputs.shape, y_val_temp.shape)
+        for i in range(inputs.shape[0]):
+            model.eval()
+            with torch.no_grad():
+                # Get the model output
+                output = model(inputs[i].unsqueeze(0))
+                # # Get the predicted class
+                _, pred_class = torch.max(output, 1)
+                predicted_label = list(encoded_labels.keys())[list(encoded_labels.values()).index(pred_class)]
+                # # Generate CAM for the first input and its predicted class
+                cam = model.getCAM(pred_class.item())
+                cam_vis = model.generate_cam_visualization(cam, inputs[0])
+
+                if predicted_label not in cams.keys():
+                    cams[predicted_label] = [cam_vis]
+                else:
+                    cams[predicted_label].append(cam_vis)
+
+                if predicted_label not in samples.keys():
+                    samples[predicted_label] = inputs[i]
+    return cams, samples
+
 @timing_decorator
-def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_EPOCHS=800, save=True, thresh=60):
+def run_training(model, train_loader, val_loader, encoded_labels, rate_l=0.001, NUM_EPOCHS=800,  save=True, thresh=60):
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=rate_l)
     losses_epoch_mean = []
@@ -43,7 +71,6 @@ def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_E
             print(f'Epoch {epoch}/{NUM_EPOCHS}, Loss: {np.mean(losses_epoch):.16f}')
 
     #sns.lineplot(x=list(range(len(losses_epoch_mean))), y=losses_epoch_mean)
-    model.eval()
     y_val = []
     y_val_hat = []
     for i, data in enumerate(val_loader):
@@ -62,10 +89,10 @@ def run_training(model, train_loader, val_loader, n_classes, rate_l=0.001, NUM_E
     cm = confusion_matrix(y_val, np.argmax(y_val_hat, axis=1))
     if save and acc*100>thresh:
         print('saving')
-        #m = torch.save(model.state_dict(), f'audio_classification_model_LR{rate_l}_a{acc*100:.0f}%.pth')
-        #torch.save(model.state_dict(), f'/opt/ml/model/ac_model_a{acc*100:.1f}_nclasses_{model.n_classes}%.pth')
-        torch.save(model.state_dict(), f'XAI_model_a{acc*100:.1f}_nclasses_{model.n_classes}%.pth')
-        data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': model.state_dict()}
+        torch.save(model.state_dict(), f'CAM_model_a{acc*100:.1f}_nclasses_{model.n_classes}%.pth')
+        data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': model.state_dict(),'n_classes': model.n_classes}
         np.save(f'results_and_model_acc_{acc*100:.1f}_nclasses_{model.n_classes}',data)
 
-    return losses_epoch_mean, acc, cm
+    cams, samples = vanillaCAMS(val_loader, model, encoded_labels)
+
+    return losses_epoch_mean, acc, cm, cams, samples

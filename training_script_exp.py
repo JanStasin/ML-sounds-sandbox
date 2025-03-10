@@ -18,7 +18,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 import random
 
 ## import custom made datset class:
-from audio_ds_model import AudioDataset, AudioClassifNet
+from audio_ds_model import AudioDataset, AudioClassifNetXAI2
 ## and the external trainig function:
 from training_func import run_training
 
@@ -33,13 +33,13 @@ transform = transforms.Compose(
     transforms.Normalize((0.5, ), (0.5, ))])
 
 
-NUM_EPOCHS = 1200
-LR = 0.00085
+NUM_EPOCHS = 800
+#LR = 0.00085
 
 #choose_labels:
-for n in range(10,50,5):
-    chosen_labels = all_labels[:n]
-    print(f'Number of labels: {n} --> {chosen_labels}')
+for LR in [0.0002, 0.00008,0.00005]:
+    chosen_labels = all_labels[:]
+    #print(f'Number of labels: {n} --> {chosen_labels}')
     print(f'Epochs  {NUM_EPOCHS} learning rate {LR}')
     encoded_labels = {}
     for i, label in enumerate(chosen_labels):
@@ -49,9 +49,8 @@ for n in range(10,50,5):
     dataset = AudioDataset(dict_mats['A'], chosen_labels, encoded_labels, transform=transform)
     datasetB = AudioDataset(dict_mats['B'], chosen_labels, encoded_labels, transform=transform)
 
-
     # Create dataloaders
-    batch_size = 4
+    batch_size = 5
     #train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     #val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
@@ -59,11 +58,12 @@ for n in range(10,50,5):
 
     ## Create an  instance of the model:
     n_classes = len(chosen_labels)
-    model = AudioClassifNet(n_classes)
+    model = AudioClassifNetXAI(n_classes)
 
     ## Run training:
-    print(f'Running training with {n_classes} classes')
+    print(f'Running training with {model.n_classes} classes')
     out = run_training(model, train_loader, val_loader, n_classes, rate_l=LR, NUM_EPOCHS=NUM_EPOCHS, save=True)
 
     ## Plot the confusion matrix:
-    sns.heatmap(out[2], annot=True, xticklabels=chosen_labels, yticklabels=chosen_labels)
+    #sns.heatmap(out[2], annot=True, xticklabels=chosen_labels, yticklabels=chosen_labels)
+    #sns.savefig(f'confusion_matrix_{LR}.png')

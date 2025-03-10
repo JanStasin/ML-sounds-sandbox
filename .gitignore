@@ -5,5 +5,10 @@ ts/
 spects/
 dict*.npy
 outputs/
+pngs/
+old_files/
 infra/.terraform/
+*_old
 ESC-Dataset-for-Environmental-Sound-Classification.ipynb
+results*
+CAM*
