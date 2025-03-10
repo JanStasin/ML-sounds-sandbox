@@ -18,9 +18,9 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 import random
 
 ## import custom made datset class:
-from audio_ds_model import AudioDataset, AudioClassifNetXAI2
+from audio_ds_model import AudioDataset, AudioClassifNetXAI
 ## and the external trainig function:
-from training_func import run_training
+from training_func_gcam import run_training, gradCAMS_saver
 
 # load preprocessed spectrograms data:
 dict_mats = np.load('/Users/jansta/learn/acoustics/dict_mats_dB.npy', allow_pickle=True).item()
@@ -33,11 +33,11 @@ transform = transforms.Compose(
     transforms.Normalize((0.5, ), (0.5, ))])
 
 
-NUM_EPOCHS = 800
+NUM_EPOCHS = 1200
 #LR = 0.00085
 
 #choose_labels:
-for LR in [0.0002, 0.00008,0.00005]:
+for LR in [0.0005,0.0002, 0.00008,0.00005, 0.00001]:
     chosen_labels = all_labels[:]
     #print(f'Number of labels: {n} --> {chosen_labels}')
     print(f'Epochs  {NUM_EPOCHS} learning rate {LR}')

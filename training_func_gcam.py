@@ -45,7 +45,7 @@ def gradCAMS_saver(val_loader, model, encoded_labels, get_all=False):
         return class_cams, samples
 
 @timing_decorator
-def run_training(model, train_loader, val_loader, encoded_labels, rate_l=0.00005, NUM_EPOCHS=800,  save=True, thresh=75):
+def run_training(model, train_loader, val_loader, encoded_labels, rate_l, NUM_EPOCHS=800,  save=True, thresh=75):
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=rate_l)
     losses_epoch_mean = []
@@ -99,11 +99,11 @@ def run_training(model, train_loader, val_loader, encoded_labels, rate_l=0.00005
     # running gradCAM specific functions
     gradCAM_out = gradCAMS_saver(val_loader, model, encoded_labels, get_all=True)
 
-    data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': model.state_dict(), 'gradCAM_out': gradCAM_out}
+    data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'lr': rate_l, 'model': model.state_dict(), 'gradCAM_out': gradCAM_out}
 
     if save and acc*100>thresh:
         print('saving model and data')
-        torch.save(model.state_dict(), f'gradCAM_model_a{acc*100:.1f}_nclasses_{model.n_classes}.pth')
+        torch.save(model.state_dict(), f'gradCAM_model_a{acc*100:.1f}_LR_{rate_l}_full.pth')
         #data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': model.state_dict(), 'gradCAM_out': gradCAM_out}
         np.save(f'results_and_model_acc_{acc*100:.1f}_nclasses_{model.n_classes}', data)
 
