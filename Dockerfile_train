@@ -20,10 +20,13 @@ COPY dict_mats_dB.npy ./
 COPY audio_ds_model.py ./
 COPY timing_decor.py ./
 COPY training_func.py ./
-COPY training_script_big.py ./
+COPY gradCAM.py ./
+COPY training_func_gcam.py ./
+COPY training_script_exp.py ./
+COPY training_script_xai.py ./
 COPY encoded_labels.npy ./
     
 RUN pip install -r requirements_train.txt
 
 # Command to run the app
-CMD ["sh", "-c", "python training_script_big.py"]
+CMD ["sh", "-c", "python training_script_exp.py"]

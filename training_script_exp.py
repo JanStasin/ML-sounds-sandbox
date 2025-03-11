@@ -22,8 +22,17 @@ from audio_ds_model import AudioDataset, AudioClassifNetXAI
 ## and the external trainig function:
 from training_func_gcam import run_training, gradCAMS_saver
 
+inp_dir = '/opt/ml/input/data/'
+dir_ = '/opt/ml/model/'
+out_dir = '/opt/ml/output/'
+
+os.makedirs(inp_dir, exist_ok=True)
+os.makedirs(dir_, exist_ok=True)
+os.makedirs(out_dir, exist_ok=True)
+
 # load preprocessed spectrograms data:
-dict_mats = np.load('/Users/jansta/learn/acoustics/dict_mats_dB.npy', allow_pickle=True).item()
+dict_mats = np.load('dict_mats_dB.npy', allow_pickle=True).item()
+#dict_mats = np.load('/Users/jansta/learn/acoustics/dict_mats_dB.npy', allow_pickle=True).item()
 all_labels = list(dict_mats['A'].keys())
 
 transform = transforms.Compose(
@@ -37,7 +46,7 @@ NUM_EPOCHS = 1200
 #LR = 0.00085
 
 #choose_labels:
-for LR in [0.0005,0.0002, 0.00008,0.00005, 0.00001]:
+for LR in [0.0005, 0.0002, 0.00008, 0.00005, 0.00001]:
     chosen_labels = all_labels[:]
     #print(f'Number of labels: {n} --> {chosen_labels}')
     print(f'Epochs  {NUM_EPOCHS} learning rate {LR}')

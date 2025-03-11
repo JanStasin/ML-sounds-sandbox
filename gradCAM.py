@@ -26,15 +26,7 @@ class gradCAM:
         self.gradients = grad_output[0].detach()
 
     def generate_cam(self, input_tensor: torch.Tensor, target_class: int = None) -> torch.Tensor:
-        """Computes the Grad-CAM heatmap for given input and target class.
-        
-        Args:
-            input_tensor (torch.Tensor): A tensor of shape (B, C, H, W) representing your input.
-            target_class (int, optional): The target class index. If None, uses the model's predicted class.
-            
-        Returns:
-            torch.Tensor: The generated heatmap of shape (B, 1, H, W) normalized [0, 1].
-        """
+   
         # Forward pass
         output = self.model(input_tensor)
         if target_class is None:

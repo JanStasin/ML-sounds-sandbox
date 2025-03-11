@@ -24,7 +24,7 @@ def backward_hook(module, grad_input, grad_output):
     print('Backward hook running...')
     gradients = grad_output[-1].detach()
     # In this case, we expect it to be torch.Size([batch size, 1024, 8, 8])
-    print(f'Gradients size: {gradients[0].size()}') 
+    print(f'Gradients size: {gradients.size()}') 
     # We need the 0 index because the tensor containing the gradients comes
     # inside a one element tuple.
 
