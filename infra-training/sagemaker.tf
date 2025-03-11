@@ -137,7 +137,7 @@ resource "null_resource" "sagemaker_training_job" {
     command = <<EOT
       aws sagemaker create-training-job \
         --region us-east-2 \
-        --training-job-name "ml-sounds-sandbox2" \
+        --training-job-name "ml-sounds-sandbox3" \
         --role-arn "arn:aws:iam::703671899612:role/sagemaker-training-role" \
         --algorithm-specification '{"TrainingImage":"703671899612.dkr.ecr.us-east-2.amazonaws.com/ml-sounds-sandbox-training:latest","TrainingInputMode":"File"}' \
         --resource-config '{"InstanceType":"ml.m5.large","InstanceCount":1,"VolumeSizeInGB":10}' \
