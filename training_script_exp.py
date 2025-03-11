@@ -4,11 +4,11 @@ import librosa.display
 import numpy as np
 # plotting
 import matplotlib.pyplot as plt
-import seaborn as sns
+#import seaborn as sns
 from PIL import Image
 
 import torch
-import torchaudio
+#import torchaudio
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as F
@@ -22,13 +22,13 @@ from audio_ds_model import AudioDataset, AudioClassifNetXAI
 ## and the external trainig function:
 from training_func_gcam import run_training, gradCAMS_saver
 
-inp_dir = '/opt/ml/input/data/'
-dir_ = '/opt/ml/model/'
-out_dir = '/opt/ml/output/'
+# inp_dir = '/opt/ml/input/data/'
+# dir_ = '/opt/ml/model/'
+# out_dir = '/opt/ml/output/'
 
-os.makedirs(inp_dir, exist_ok=True)
-os.makedirs(dir_, exist_ok=True)
-os.makedirs(out_dir, exist_ok=True)
+# os.makedirs(inp_dir, exist_ok=True)
+# os.makedirs(dir_, exist_ok=True)
+# os.makedirs(out_dir, exist_ok=True)
 
 # load preprocessed spectrograms data:
 dict_mats = np.load('dict_mats_dB.npy', allow_pickle=True).item()
@@ -47,12 +47,14 @@ NUM_EPOCHS = 1200
 
 #choose_labels:
 for LR in [0.0005, 0.0002, 0.00008, 0.00005, 0.00001]:
-    chosen_labels = all_labels[:]
+    chosen_labels = all_labels
     #print(f'Number of labels: {n} --> {chosen_labels}')
     print(f'Epochs  {NUM_EPOCHS} learning rate {LR}')
     encoded_labels = {}
     for i, label in enumerate(chosen_labels):
         encoded_labels[label] = i
+    
+
 
     # Create dataset with transform
     dataset = AudioDataset(dict_mats['A'], chosen_labels, encoded_labels, transform=transform)
@@ -71,7 +73,7 @@ for LR in [0.0005, 0.0002, 0.00008, 0.00005, 0.00001]:
 
     ## Run training:
     print(f'Running training with {model.n_classes} classes')
-    out = run_training(model, train_loader, val_loader, n_classes, rate_l=LR, NUM_EPOCHS=NUM_EPOCHS, save=True)
+    out = run_training(model, train_loader, val_loader, encoded_labels, rate_l=LR, NUM_EPOCHS=NUM_EPOCHS, save=True)
 
     ## Plot the confusion matrix:
     #sns.heatmap(out[2], annot=True, xticklabels=chosen_labels, yticklabels=chosen_labels)

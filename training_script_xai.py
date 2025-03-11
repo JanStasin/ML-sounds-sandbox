@@ -17,13 +17,17 @@ from audio_ds_model import AudioDataset, AudioClassifNetXAI
 from training_func_gcam import run_training, gradCAMS_saver
 
 n_epochs = 5000
-# # create dir for aws:
-# dir_ = '/opt/ml/model/'
 
-# os.makedirs(dir_, exist_ok=True)
+inp_dir = '/opt/ml/input/data/'
+dir_ = '/opt/ml/model/'
+out_dir = '/opt/ml/output/'
+
+os.makedirs(inp_dir, exist_ok=True)
+os.makedirs(dir_, exist_ok=True)
+os.makedirs(out_dir, exist_ok=True)
 
 # load preprocessed spectrograms data:
-dict_mats = np.load('dict_mats_dB.npy', allow_pickle=True).item()
+dict_mats = np.load(inp_dir+'dict_mats_dB.npy', allow_pickle=True).item()
 all_labels = list(dict_mats['A'].keys())
 
 transform = transforms.Compose(
@@ -44,12 +48,13 @@ encoded_labels = {}
 for i, label in enumerate(chosen_labels):
     encoded_labels[label] = i
 
+
 # Create dataset with transform
 dataset = AudioDataset(dict_mats['A'], chosen_labels, encoded_labels, transform=transform)
 datasetB = AudioDataset(dict_mats['B'], chosen_labels, encoded_labels, transform=transform)
 
 # Create dataloaders
-batch_size = 4
+batch_size = 5
 #train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 #val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)

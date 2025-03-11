@@ -26,18 +26,24 @@ def gradCAMS_saver(val_loader, model, encoded_labels, get_all=False):
             predicted_label = list(encoded_labels.keys())[list(encoded_labels.values()).index(pred_class)]
             #print(f"Predicted class: {predicted_label}")
             if predicted_label not in cams.keys():
-                cams[predicted_label] = [cam_hm]
+                cams[predicted_label] = [cam_hm.numpy()]
             else:
-                cams[predicted_label].append(cam_hm)
+                cams[predicted_label].append(cam_hm.cpu().numpy())
 
             if predicted_label not in samples.keys():
                 samples[predicted_label] = inputs[j]
 
     class_cams = {}
+
     for key in cams.keys():
-        mean_class_cam = np.mean(cams[key], axis=0)
-        #print(mean_class_cam.shape)
-        class_cams[key] = mean_class_cam
+        try:
+            mean_class_cam = np.mean(cams[key], axis=0)
+            #print(mean_class_cam.shape)
+            class_cams[key] = mean_class_cam
+        except:
+            print(cams[key])
+            print(len(cams[key]))
+            print(f'Error at averaging cams.. class_cams will be empty')
 
     if get_all:
         return class_cams, cams, samples
@@ -103,8 +109,8 @@ def run_training(model, train_loader, val_loader, encoded_labels, rate_l, NUM_EP
 
     if save and acc*100>thresh:
         print('saving model and data')
-        torch.save(model.state_dict(), f'gradCAM_model_a{acc*100:.1f}_LR_{rate_l}_full.pth')
+        torch.save(model.state_dict(), f'/opt/ml/model/gradCAM_model_a{acc*100:.1f}_LR_{rate_l}_full.pth')
         #data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': model.state_dict(), 'gradCAM_out': gradCAM_out}
-        np.save(f'results_and_model_acc_{acc*100:.1f}_nclasses_{model.n_classes}', data)
+        np.save(f'/opt/ml/output/results_and_model_acc_{acc*100:.1f}_nclasses_{model.n_classes}', data)
 
     return data
