@@ -42,7 +42,7 @@ transform = transforms.Compose(
     transforms.Normalize((0.5, ), (0.5, ))])
 
 
-NUM_EPOCHS = 1200
+NUM_EPOCHS = 1500
 #LR = 0.00085
 
 #choose_labels:

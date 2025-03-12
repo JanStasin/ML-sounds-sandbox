@@ -28,7 +28,7 @@ def gradCAMS_saver(val_loader, model, encoded_labels, get_all=False):
             if predicted_label not in cams.keys():
                 cams[predicted_label] = [cam_hm.numpy()]
             else:
-                cams[predicted_label].append(cam_hm.cpu().numpy())
+                cams[predicted_label].append(cam_hm.numpy())
 
             if predicted_label not in samples.keys():
                 samples[predicted_label] = inputs[j]
