@@ -16,18 +16,20 @@ from audio_ds_model import AudioDataset, AudioClassifNetXAI
 ## and the external trainig function:
 from training_func_gcam import run_training, gradCAMS_saver
 
-n_epochs = 5000
+n_epochs = 3000
 
-inp_dir = '/opt/ml/input/data/'
-dir_ = '/opt/ml/model/'
-out_dir = '/opt/ml/output/'
+# inp_dir = '/opt/ml/input/data/'
+# dir_ = '/opt/ml/model/'
+# out_dir = '/opt/ml/output/'
 
-os.makedirs(inp_dir, exist_ok=True)
-os.makedirs(dir_, exist_ok=True)
-os.makedirs(out_dir, exist_ok=True)
+# os.makedirs(inp_dir, exist_ok=True)
+# os.makedirs(dir_, exist_ok=True)
+# os.makedirs(out_dir, exist_ok=True)
 
 # load preprocessed spectrograms data:
-dict_mats = np.load(inp_dir+'dict_mats_dB.npy', allow_pickle=True).item()
+# dict_mats = np.load(inp_dir+'dict_mats_dB.npy', allow_pickle=True).item()
+
+dict_mats = np.load('dict_mats_dB.npy', allow_pickle=True).item()
 all_labels = list(dict_mats['A'].keys())
 
 transform = transforms.Compose(
@@ -51,14 +53,24 @@ for i, label in enumerate(chosen_labels):
 
 # Create dataset with transform
 dataset = AudioDataset(dict_mats['A'], chosen_labels, encoded_labels, transform=transform)
-datasetB = AudioDataset(dict_mats['B'], chosen_labels, encoded_labels, transform=transform)
+#datasetB = AudioDataset(dict_mats['B'], chosen_labels, encoded_labels, transform=transform)
+
+# Split dataset
+train_size = int(0.8 * len(dataset))
+val_size = len(dataset) - train_size
+train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
 # Create dataloaders
-batch_size = 5
-#train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-#val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-val_loader = DataLoader(datasetB, batch_size=batch_size, shuffle=True)
+batch_size = 4
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
+
+# # Create dataloaders
+# batch_size = 5
+# #train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+# train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+# #val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+# val_loader = DataLoader(datasetB, batch_size=batch_size, shuffle=True)
 
 ## Create an  instance of the model:
 n_classes = len(chosen_labels)

@@ -110,7 +110,8 @@ def run_training(model, train_loader, val_loader, encoded_labels, rate_l, NUM_EP
     if save and acc*100>thresh:
         print('saving model and data')
         torch.save(model.state_dict(), f'/opt/ml/model/gradCAM_model_a{acc*100:.1f}_LR_{rate_l}_full.pth')
-        #data = {'mean_loss': losses_epoch_mean, 'acc':acc, 'cm': cm, 'model': model.state_dict(), 'gradCAM_out': gradCAM_out}
-        np.save(f'/opt/ml/output/results_and_model_acc_{acc*100:.1f}_nclasses_{model.n_classes}', data)
+        #torch.save(model.state_dict(), f'gradCAM_model_a{acc*100:.1f}_LR_{rate_l}_full__.pth')
+        np.save(f'/opt/ml/output/results_and_model_acc_{acc*100:.1f}_nclasses_{model.n_classes}__', data)
+        #np.save(f'results_and_model_acc_{acc*100:.1f}_nclasses_{model.n_classes}__', data)
 
     return data
