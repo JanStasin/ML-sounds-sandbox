@@ -52,19 +52,26 @@ Access the API documentation at [http://127.0.0.1:8000/docs](http://127.0.0.1:80
 
 ---
 
-## Infra
-
-- Run `terraform plan` to view plan of Terraform.
-- Run `terraform apply` to deploy the infrastructure.
-- Run `terraform destroy` to stroy the infrastructure in AWS.
-
 
 ### 
-Update Docker Image
+Deploy Training
 
 ```
-docker build -t ml-sounds-sandbox .
+# 1. Push new training docker image
+docker build --platform linux/amd64 -t ml-sounds-sandbox-training -f Dockerfile_train .
+
+export AWS_ACCESS_KEY_ID=xxxx
+export AWS_SECRET_ACCESS_KEY=xxxxxxx
+export AWS_DEFAULT_REGION=us-east-2
 aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 703671899612.dkr.ecr.us-east-2.amazonaws.com
-docker tag ml-sounds-sandbox:latest 703671899612.dkr.ecr.us-east-2.amazonaws.com/ml-sounds-sandbox:latest
-docker push 703671899612.dkr.ecr.us-east-2.amazonaws.com/ml-sounds-sandbox:latest
+docker tag ml-sounds-sandbox-training:latest 703671899612.dkr.ecr.us-east-2.amazonaws.com/ml-sounds-sandbox-training:latest
+docker push 703671899612.dkr.ecr.us-east-2.amazonaws.com/ml-sounds-sandbox-training:latest
+
+2. Apply infra
+cd infra-training
+aws iam attach-role-policy --role-name sagemaker-training-role --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+terraform init
+#terraform plan
+terraform apply
+terraform destroy
 ```
