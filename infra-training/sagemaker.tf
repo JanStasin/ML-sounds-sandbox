@@ -1,31 +1,31 @@
-
+# Provider Configuration
 provider "aws" {
-  region = "us-east-2"
+  region = "us-west-2"
 }
 
-provider "null" {}
-
-
+# IAM Role for SageMaker
 resource "aws_iam_role" "sagemaker_role" {
-  name = "sagemaker-training-role"
+  name        = "sagemaker-training-role"
+  description = "Role for SageMaker training jobs"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
+        Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
           Service = "sagemaker.amazonaws.com"
         }
-        Action = "sts:AssumeRole"
       }
     ]
   })
 }
 
-resource "aws_iam_policy" "sagemaker_policy" {
-  name        = "sagemaker-training-policy"
-  description = "Policy for SageMaker to access S3 and CloudWatch"
+# S3 Access Policy
+resource "aws_iam_policy" "s3_training_data_access" {
+  name        = "s3-training-data-access"
+  description = "Allows SageMaker to access training data in S3"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -34,116 +34,53 @@ resource "aws_iam_policy" "sagemaker_policy" {
         Effect = "Allow"
         Action = [
           "s3:GetObject",
-          "s3:PutObject",
-          "s3:ListBucket"
+          "s3:ListBucket",
+          "s3:PutObject"
         ]
         Resource = [
-          "arn:aws:s3:::ml-sounds-sandbox-bucket",
-          "arn:aws:s3:::ml-sounds-sandbox-bucket/*"
+          "arn:aws:s3:::ml-sandbox-js-bucket",
+          "arn:aws:s3:::ml-sandbox-js-bucket/*"
         ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "sagemaker:CreateTrainingJob",
-          "sagemaker:DescribeTrainingJob",
-          "sagemaker:StopTrainingJob"
-        ]
-        Resource = "*"
       }
     ]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "attach_policy" {
+# Attach Policies to Role
+resource "aws_iam_role_policy_attachment" "s3_access_attach" {
+  role       = aws_iam_role.sagemaker_role.name
+  policy_arn = aws_iam_policy.s3_training_data_access.arn
+}
+
+resource "aws_iam_role_policy_attachment" "sagemaker_full_access" {
   role       = aws_iam_role.sagemaker_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
 }
 
+# SageMaker Training Job with error handling
+resource "null_resource" "training_job" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
 
-resource "aws_iam_policy" "sagemaker_s3_policy" {
-  name        = "sagemaker-s3-access"
-  description = "Allows SageMaker to access S3 bucket for training data"
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "s3:ListBucket",
-          "s3:GetObject",
-          "s3:PutObject"
-        ],
-        Resource = [
-          "arn:aws:s3:::ml-sounds-sandbox-bucket",
-          "arn:aws:s3:::ml-sounds-sandbox-bucket/*"
-        ]
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "attach_sagemaker_s3" {
-  role       = aws_iam_role.sagemaker_role.name
-  policy_arn = aws_iam_policy.sagemaker_s3_policy.arn
-}
-
-resource "aws_iam_policy" "sagemaker_ecr_policy" {
-  name        = "sagemaker-ecr-access"
-  description = "Allows SageMaker to pull images from ECR"
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "ecr:GetAuthorizationToken"
-        ],
-        Resource = "*"
-      },
-      {
-        Effect = "Allow",
-        Action = [
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:BatchGetImage",
-          "ecr:GetDownloadUrlForLayer"
-        ],
-        Resource = "arn:aws:ecr:us-east-2:703671899612:repository/ml-sounds-sandbox-training"
-      }
-    ]
-  })
-}
-
-
-resource "aws_iam_role_policy_attachment" "attach_sagemaker_ecr" {
-  role       = aws_iam_role.sagemaker_role.name
-  policy_arn = aws_iam_policy.sagemaker_ecr_policy.arn
-}
-
-
-resource "null_resource" "sagemaker_training_job" {
   provisioner "local-exec" {
     command = <<EOT
       aws sagemaker create-training-job \
-        --region us-east-2 \
-        --training-job-name "ml-sounds-sandbox3" \
-        --role-arn "arn:aws:iam::703671899612:role/sagemaker-training-role" \
-        --algorithm-specification '{"TrainingImage":"703671899612.dkr.ecr.us-east-2.amazonaws.com/ml-sounds-sandbox-training:latest","TrainingInputMode":"File"}' \
-        --resource-config '{"InstanceType":"ml.m5.large","InstanceCount":1,"VolumeSizeInGB":10}' \
-        --input-data-config '[{"ChannelName":"train","DataSource":{"S3DataSource":{"S3Uri":"s3://ml-sounds-sandbox-bucket/train/","S3DataType":"S3Prefix","S3DataDistributionType":"FullyReplicated"}}}]' \
-        --output-data-config '{"S3OutputPath":"s3://ml-sounds-sandbox-bucket/output/"}' \
-        --stopping-condition '{"MaxRuntimeInSeconds":3600}'
+      --region us-west-2 \
+      --training-job-name "ml-sandbox-js-mini" \
+      --role-arn ${aws_iam_role.sagemaker_role.arn} \
+      --algorithm-specification '{"TrainingImage":"491085419436.dkr.ecr.us-west-2.amazonaws.com/training/ml-sandbox-js:latest","TrainingInputMode":"File"}' \
+      --resource-config '{"InstanceType":"ml.m5.large","InstanceCount":1,"VolumeSizeInGB":10}' \
+      --input-data-config '[{"ChannelName":"train","DataSource":{"S3DataSource":{"S3Uri":"s3://ml-sandbox-js-bucket/train-data/","S3DataType":"S3Prefix","S3DataDistributionType":"FullyReplicated"}}}]' \
+      --output-data-config '{"S3OutputPath":"s3://ml-sandbox-js-bucket/output/"}' \
+      --stopping-condition '{"MaxRuntimeInSeconds":36000}'
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -ne 0 ]; then
+        echo "Error creating training job"
+        exit $EXIT_CODE
+      fi
     EOT
+    interpreter = ["/bin/bash", "-c"]
   }
 }
+        

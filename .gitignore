@@ -6,8 +6,9 @@ spects/
 dict*.npy
 outputs/
 pngs/
-old_files/
+#old_files/
 infra/.terraform/
+infra-training/.terraform/*
 *_old
 ESC-Dataset-for-Environmental-Sound-Classification.ipynb
 results*

@@ -1,7 +1,5 @@
 import functools
 import time
-from tqdm import tqdm
-
 
 def timing_decorator(func):
     @functools.wraps(func)

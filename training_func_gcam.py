@@ -51,7 +51,7 @@ def gradCAMS_saver(val_loader, model, encoded_labels, get_all=False):
         return class_cams, samples
 
 @timing_decorator
-def run_training(model, train_loader, val_loader, encoded_labels, rate_l, NUM_EPOCHS=800,  save=True, thresh=75):
+def run_training(model, train_loader, val_loader, encoded_labels, rate_l, NUM_EPOCHS=800,  save=True, thresh=50):
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=rate_l)
     losses_epoch_mean = []

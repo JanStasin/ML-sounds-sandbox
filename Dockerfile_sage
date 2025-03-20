@@ -1,0 +1,29 @@
+# Use a Python base image compatible with SageMaker
+FROM python:3.11-slim
+
+# Set the working directory to SageMaker's expected location
+WORKDIR /opt/ml
+
+# Copy files to the container
+COPY requirements_train.txt ./
+COPY dict_mats_dB.npy ./
+COPY audio_ds_model.py ./
+COPY timing_decor.py ./
+COPY training_func.py ./
+COPY gradCAM.py ./
+COPY training_func_gcam.py ./
+COPY training_script_exp.py ./
+COPY training_script_xai.py ./
+COPY encoded_labels.npy ./
+
+# Install dependencies
+RUN pip install -r requirements_train.txt --no-cache-dir
+
+# Rename training_script_exp.py to match SageMaker's expectations
+RUN mv training_script_exp.py algorithm.py
+
+# Make the script executable
+RUN chmod +x algorithm.py
+
+# Set the entrypoint to use SageMaker's expected format
+ENTRYPOINT ["python3.11", "/opt/ml/algorithm.py"]
