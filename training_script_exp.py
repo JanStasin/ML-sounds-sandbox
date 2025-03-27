@@ -50,7 +50,6 @@ out_dir = '/opt/ml/output/'
 os.makedirs(dir_, exist_ok=True)
 os.makedirs(out_dir, exist_ok=True)
 
-<<<<<<< HEAD
 for directory in [dir_, out_dir]:
     if os.path.exists(directory):
         print(f'Directory {directory} exists or was successfully created.')
@@ -74,10 +73,6 @@ dataset = AudioDataset(dict_mats['A'], chosen_labels, encoded_labels, transform=
 
 print('Dataset created successfully.')
 
-=======
-# load preprocessed spectrograms data:
-dict_mats = np.load('dict_mats_dB.npy', allow_pickle=True).item()
->>>>>>> parent of 455ff88 (fix before aws deployment 2)
 # Split dataset
 train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
@@ -92,18 +87,12 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_
 
 
 
-NUM_EPOCHS = 5000
+NUM_EPOCHS = 3000
 #LR = 0.00085
 
 #choose_labels:
-<<<<<<< HEAD
-print(f'starting the trainin with {NUM_EPOCHS}')
-for LR in [0.001, 0.0005, 0.0002, 0.00008, 0.00005][::]:
-    
-=======
-for LR in [0.001, 0.0005, 0.0002, 0.00008, 0.00005, 0.00001]:
+for LR in [0.0005, 0.0001,0.000075, 0.00005, 0.00001]:
     chosen_labels = all_labels
->>>>>>> parent of 455ff88 (fix before aws deployment 2)
 
     print(f'Epochs  {NUM_EPOCHS} learning rate {LR}')
     ## Create an  instance of the model:

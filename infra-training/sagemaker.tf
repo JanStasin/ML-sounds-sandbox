@@ -67,13 +67,13 @@ resource "null_resource" "training_job" {
     command = <<EOT
       aws sagemaker create-training-job \
       --region us-west-2 \
-      --training-job-name "ml-sandbox-js-mini" \
+      --training-job-name "ml-sandbox-js-09" \
       --role-arn ${aws_iam_role.sagemaker_role.arn} \
       --algorithm-specification '{"TrainingImage":"491085419436.dkr.ecr.us-west-2.amazonaws.com/training/ml-sandbox-js:latest","TrainingInputMode":"File"}' \
       --resource-config '{"InstanceType":"ml.m5.large","InstanceCount":1,"VolumeSizeInGB":10}' \
       --input-data-config '[{"ChannelName":"train","DataSource":{"S3DataSource":{"S3Uri":"s3://ml-sandbox-js-bucket/train-data/","S3DataType":"S3Prefix","S3DataDistributionType":"FullyReplicated"}}}]' \
       --output-data-config '{"S3OutputPath":"s3://ml-sandbox-js-bucket/output/"}' \
-      --stopping-condition '{"MaxRuntimeInSeconds":36000}'
+      --stopping-condition '{"MaxRuntimeInSeconds":420000}'
       EXIT_CODE=$?
       if [ $EXIT_CODE -ne 0 ]; then
         echo "Error creating training job"

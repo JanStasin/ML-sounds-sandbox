@@ -19,23 +19,6 @@ def get_mel_spect(file_path, in_dB=True, SR=22050, FRAME=512, n_mels=128):
         return mel_spect
 
 
-def backward_hook(module, grad_input, grad_output):
-    global gradients # refers to the variable in the global scope
-    print('Backward hook running...')
-    gradients = grad_output[-1].detach()
-    # In this case, we expect it to be torch.Size([batch size, 1024, 8, 8])
-    print(f'Gradients size: {gradients.size()}') 
-    # We need the 0 index because the tensor containing the gradients comes
-    # inside a one element tuple.
-
-def forward_hook(module, args, output):
-    global activations # refers to the variable in the global scope
-    print('Forward hook running...')
-    activations = output.detach()
-    # In this case, we expect it to be torch.Size([batch size, 1024, 8, 8])
-    print(f'Activations size: {activations.size()}')
-
-
 def resize_cam_to_input(cam, input_shape):
     """
     Resize CAM to match input dimensions while preserving aspect ratio

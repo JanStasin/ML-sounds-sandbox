@@ -86,7 +86,7 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_
 
 
 
-NUM_EPOCHS = 200
+NUM_EPOCHS = 50
 #LR = 0.00085
 #choose_labels:
 print(f'starting the trainin with {NUM_EPOCHS}')
