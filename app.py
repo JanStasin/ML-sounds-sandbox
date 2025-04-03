@@ -13,13 +13,13 @@ app = FastAPI()
 
 # Load the saved model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-m = np.load('XAI_model_a74.1_nclasses_50%.npy', allow_pickle=True).item()['model']
+m = np.load('results_and_model_acc_83.5_LR_0.00085_nclasses_15.npy', allow_pickle=True).item()['model']
 
+
+
+dict_mats = np.load("dict_mats_dB.npy", allow_pickle=True).item()
 all_labels = list(dict_mats['A'].keys())
 chosen_labels = all_labels
-encoded_labels = {}
-for i, label in enumerate(all_labels):
-        encoded_labels[label] = i
 n_classes = len(chosen_labels)
 model = AudioClassifNetXAI(n_classes)
 model.load_state_dict(torch.load(m, map_location=device))

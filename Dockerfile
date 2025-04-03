@@ -17,11 +17,13 @@ WORKDIR /app
 
 # Copy files to the container
 COPY app.py ./ 
-COPY working_models/XAI_model_a74.1_nclasses_50%.pth ./
+COPY working_models/results_and_model_acc_83.5_LR_0.00085_nclasses_15.npy .
 COPY audio_ds_model.py ./
 COPY encoded_labels.npy ./ 
 COPY helper_functions.py ./ 
 COPY requirements.txt ./ 
+
+COPY dict_mats_dB.npy ./
     
 RUN pip install -r requirements.txt
 
