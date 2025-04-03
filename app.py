@@ -13,9 +13,15 @@ app = FastAPI()
 
 # Load the saved model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-m = np.load('working_models/results_and_model_acc_78.3_LR_0.001_nclasses_8.npy', allow_pickle=True).item()['model']
-model = AudioClassifNet(n_classes=8)
-#model = AudioClassifNetBig()
+m = np.load('results_and_model_acc_83.5_LR_0.00085_nclasses_15.npy', allow_pickle=True).item()['model']
+
+
+
+dict_mats = np.load("dict_mats_dB.npy", allow_pickle=True).item()
+all_labels = list(dict_mats['A'].keys())
+chosen_labels = all_labels
+n_classes = len(chosen_labels)
+model = AudioClassifNetXAI(n_classes)
 model.load_state_dict(torch.load(m, map_location=device))
 model.eval()
 
@@ -25,10 +31,6 @@ transform = transforms.Compose(
     #transforms.ToTensor(),
     transforms.Normalize((0.5, ), (0.5, ))])
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# Ensure upload folder exists
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/upload', methods=['POST'])
 def upload_audio():
@@ -39,13 +41,15 @@ def upload_audio():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    if file:
-        filename = file.filename
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
+    # Create a temporary directory and file path
+    temp_dir = tempfile.mkdtemp()
+    temp_file_path = os.path.join(temp_dir, file.filename)
+
+    # Save the file to the temporary path
+    file.save(temp_file_path)
 
     try:
-        spectrogram_image = get_mel_spect(file_path)
+        spectrogram_image = get_mel_spect(temp_file_path)
         # Add a channel dimension
         sample = np.expand_dims(spectrogram_image, axis=0)
         # Convert to tensor
@@ -61,4 +65,4 @@ def upload_audio():
             return jsonify({'predicted_label': predicted_label}), 200
         #return jsonify({'message': 'Spectrogram created successfully'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500    
+        return jsonify({'error': str(e)}), 500

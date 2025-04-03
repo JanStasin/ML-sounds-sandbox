@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     libfreetype6-dev \
     build-essential \
+    ffmpeg \
     libopenblas-dev && \
     rm -rf /var/lib/apt/lists/*
 
@@ -15,11 +16,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy files to the container
-COPY api.py ./ 
-COPY model ./model
+COPY app.py ./ 
+COPY working_models/results_and_model_acc_83.5_LR_0.00085_nclasses_15.npy .
+COPY audio_ds_model.py ./
+COPY encoded_labels.npy ./ 
+COPY helper_functions.py ./ 
 COPY requirements.txt ./ 
+
+COPY dict_mats_dB.npy ./
     
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Expose the port
 EXPOSE 8000
